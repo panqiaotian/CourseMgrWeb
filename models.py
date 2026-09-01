@@ -11,6 +11,8 @@ class Student(Base):
     name = Column(String)
     gender = Column(String)
     grade = Column(String)
+    student_type = Column(String, default='应届')      # 应届 / 往届
+    enrollment_status = Column(String, default='在学') # 在学 / 停学
 
 class Schedule(Base):
     __tablename__ = 'schedules'

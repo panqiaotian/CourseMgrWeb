@@ -876,27 +876,38 @@ def students():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         search = request.args.get('search', '', type=str)
-        
+
+        # 获取筛选参数（默认只显示应届学生）
+        type_filter = request.args.get('type_filter', '应届', type=str)
+        status_filter = request.args.get('status_filter', '', type=str)
+
         # 获取排序参数
         sort_by = request.args.get('sort_by', 'id')
         sort_order = request.args.get('sort_order', 'desc')
-        
+
         # 验证分页参数
         page, per_page, search = validate_pagination_params(page, per_page, search)
-        
+
         # 构建查询
         query = db_session.query(Student)
-        
+
+        # 添加筛选条件
+        # 默认只显示应届学生（除非明确指定查看全部）
+        if type_filter:
+            query = query.filter(Student.student_type == type_filter)
+        if status_filter:
+            query = query.filter(Student.enrollment_status == status_filter)
+
         # 添加搜索条件
         if search:
             query = query.filter(
-                Student.name.contains(search) | 
+                Student.name.contains(search) |
                 Student.grade.contains(search)
             )
-        
+
         # 获取总数（用于前端显示）
         total = query.count()
-        
+
         # 定义可排序字段映射
         sort_mapping = {
             'id': Student.id,
@@ -904,17 +915,17 @@ def students():
             'gender': Student.gender,
             'grade': Student.grade
         }
-        
+
         # 应用排序
         sort_field = sort_mapping.get(sort_by, Student.id)
         if sort_order == 'asc':
             query = query.order_by(sort_field.asc())
         else:
             query = query.order_by(sort_field.desc())
-        
+
         # 应用分页
         students_list = query.limit(per_page).offset((page - 1) * per_page).all()
-        
+
         # 如果是AJAX请求，返回JSON数据
         if request.headers.get('Content-Type') == 'application/json':
             return jsonify({
@@ -922,22 +933,26 @@ def students():
                     'id': s.id,
                     'name': s.name,
                     'gender': s.gender,
-                    'grade': s.grade
+                    'grade': s.grade,
+                    'student_type': s.student_type,
+                    'enrollment_status': s.enrollment_status
                 } for s in students_list],
                 'total': total,
                 'page': page,
                 'per_page': per_page
             })
-        
+
         # 普通请求返回模板（只返回当前页数据）
-        return render_template('students.html', 
-                               students=students_list, 
+        return render_template('students.html',
+                               students=students_list,
                                total=total,
                                page=page,
                                per_page=per_page,
                                search=search,
                                sort_by=sort_by,
-                               sort_order=sort_order)
+                               sort_order=sort_order,
+                               type_filter=type_filter,
+                               status_filter=status_filter)
     finally:
         db_session.close()
 
@@ -949,14 +964,19 @@ def add_student():
         name = request.form.get('name')
         gender = request.form.get('gender')
         grade = request.form.get('grade')
-        
+        student_type = request.form.get('student_type', '应届')
+        enrollment_status = request.form.get('enrollment_status', '在学')
+
         if not name or not gender or not grade:
             flash('请填写所有必填字段！', 'danger')
             return redirect(url_for('add_student'))
-        
+
         db_session = Session()
         try:
-            new_student = Student(name=name, gender=gender, grade=grade)
+            new_student = Student(
+                name=name, gender=gender, grade=grade,
+                student_type=student_type, enrollment_status=enrollment_status
+            )
             db_session.add(new_student)
             db_session.commit()
             flash('学生添加成功！', 'success')
@@ -966,7 +986,7 @@ def add_student():
             flash(f'添加失败: {str(e)}', 'danger')
         finally:
             db_session.close()
-            
+
     return render_template('student_form.html')
 
 # 编辑学生路由
@@ -979,12 +999,14 @@ def edit_student(student_id):
         if not student:
             flash('学生不存在！', 'danger')
             return redirect(url_for('students'))
-        
+
         if request.method == 'POST':
             student.name = request.form.get('name')
             student.gender = request.form.get('gender')
             student.grade = request.form.get('grade')
-            
+            student.student_type = request.form.get('student_type', '应届')
+            student.enrollment_status = request.form.get('enrollment_status', '在学')
+
             try:
                 db_session.commit()
                 flash('学生信息更新成功！', 'success')
@@ -992,7 +1014,7 @@ def edit_student(student_id):
             except Exception as e:
                 db_session.rollback()
                 flash(f'更新失败: {str(e)}', 'danger')
-        
+
         return render_template('student_form.html', student=student)
     finally:
         db_session.close()
@@ -1023,6 +1045,111 @@ def delete_student(student_id):
     finally:
         db_session.close()
         
+    return redirect(url_for('students'))
+
+# 年级顺序表（用于自动升年级）
+GRADE_SEQUENCE = [
+    '小学一年级', '小学二年级', '小学三年级', '小学四年级', '小学五年级', '小学六年级',
+    '初中一年级', '初中二年级', '初中三年级',
+    '高中一年级', '高中二年级', '高中三年级'
+]
+
+# 批量更新年级路由
+@app.route('/students/batch-update-grade', methods=['POST'])
+@login_required
+def batch_update_grade():
+    student_ids = request.form.getlist('student_ids')
+    mode = request.form.get('mode', 'auto')  # auto 或 manual
+    target_grade = request.form.get('target_grade', '')
+
+    if not student_ids:
+        flash('请选择要更新的学生！', 'warning')
+        return redirect(url_for('students'))
+
+    db_session = Session()
+    try:
+        students = db_session.query(Student).filter(Student.id.in_([int(sid) for sid in student_ids])).all()
+
+        updated = 0
+        graduated = 0
+        skipped = 0
+
+        for student in students:
+            # 只更新在学学生
+            if student.enrollment_status != '在学':
+                skipped += 1
+                continue
+
+            if mode == 'manual':
+                # 手动模式：直接设置目标年级
+                if target_grade:
+                    student.grade = target_grade
+                    updated += 1
+            else:
+                # 自动模式：按年级顺序升一级
+                if student.grade in GRADE_SEQUENCE:
+                    current_idx = GRADE_SEQUENCE.index(student.grade)
+                    if current_idx < len(GRADE_SEQUENCE) - 1:
+                        student.grade = GRADE_SEQUENCE[current_idx + 1]
+                        updated += 1
+                    else:
+                        # 高三学生升年级 -> 标记为往届（毕业）
+                        student.student_type = '往届'
+                        graduated += 1
+                else:
+                    skipped += 1
+
+        db_session.commit()
+        msg = f'更新完成：{updated} 名学生升年级'
+        if graduated > 0:
+            msg += f'，{graduated} 名高三学生已毕业（标记为往届）'
+        if skipped > 0:
+            msg += f'，{skipped} 名非在学学生已跳过'
+        flash(msg, 'success')
+    except Exception as e:
+        db_session.rollback()
+        flash(f'批量更新失败: {str(e)}', 'danger')
+    finally:
+        db_session.close()
+
+    return redirect(url_for('students'))
+
+# 批量更新状态路由
+@app.route('/students/batch-update-status', methods=['POST'])
+@login_required
+def batch_update_status():
+    student_ids = request.form.getlist('student_ids')
+    field = request.form.get('field', '')  # student_type 或 enrollment_status
+    value = request.form.get('value', '')
+
+    if not student_ids:
+        flash('请选择要更新的学生！', 'warning')
+        return redirect(url_for('students'))
+
+    if field not in ['student_type', 'enrollment_status']:
+        flash('无效的字段！', 'danger')
+        return redirect(url_for('students'))
+
+    if value not in ['应届', '往届', '在学', '停学']:
+        flash('无效的值！', 'danger')
+        return redirect(url_for('students'))
+
+    db_session = Session()
+    try:
+        students = db_session.query(Student).filter(Student.id.in_([int(sid) for sid in student_ids])).all()
+
+        for student in students:
+            setattr(student, field, value)
+
+        db_session.commit()
+        field_name = '类型' if field == 'student_type' else '状态'
+        flash(f'已成功更新 {len(students)} 名学生的{field_name}为"{value}"', 'success')
+    except Exception as e:
+        db_session.rollback()
+        flash(f'批量更新失败: {str(e)}', 'danger')
+    finally:
+        db_session.close()
+
     return redirect(url_for('students'))
 
 # 课程安排路由
