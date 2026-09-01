@@ -4,11 +4,30 @@
 
 {% block content %}
 <div class="card shadow mb-4">
-    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h6 class="m-0 font-weight-bold text-primary">学生列表 (共{{ total }}名学生)</h6>
-        <a href="{{ url_for('add_student') }}" class="btn btn-sm btn-primary">
-            <i class="fas fa-plus"></i> 添加学生
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <form method="get" action="{{ url_for('students') }}" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="search" value="{{ search or '' }}">
+                <input type="hidden" name="per_page" value="{{ per_page }}">
+                <input type="hidden" name="sort_by" value="{{ sort_by }}">
+                <input type="hidden" name="sort_order" value="{{ sort_order }}">
+                <select name="type_filter" class="form-select form-select-sm filter-select" onchange="this.form.submit()">
+                    <option value="应届" {{ 'selected' if type_filter == '应届' else '' }}>应届</option>
+                    <option value="往届" {{ 'selected' if type_filter == '往届' else '' }}>往届</option>
+                    <option value="" {{ 'selected' if not type_filter else '' }}>全部类型</option>
+                </select>
+                <select name="status_filter" class="form-select form-select-sm filter-select" onchange="this.form.submit()">
+                    <option value="">全部状态</option>
+                    <option value="在学" {{ 'selected' if status_filter == '在学' else '' }}>在学</option>
+                    <option value="停学" {{ 'selected' if status_filter == '停学' else '' }}>停学</option>
+                </select>
+                <noscript><button type="submit" class="btn btn-sm btn-outline-secondary">筛选</button></noscript>
+            </form>
+            <a href="{{ url_for('add_student') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus"></i> 添加学生
+            </a>
+        </div>
     </div>
     <div class="card-body">
         <!-- 搜索和控制栏 -->
@@ -41,31 +60,6 @@
                            class="btn btn-outline-secondary {{ 'active' if per_page == 50 else '' }}">50</a>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- 筛选栏 -->
-        <div class="row mb-3 align-items-center">
-            <div class="col-auto">
-                <form method="get" action="{{ url_for('students') }}" class="d-flex align-items-center gap-2">
-                    <input type="hidden" name="search" value="{{ search or '' }}">
-                    <input type="hidden" name="per_page" value="{{ per_page }}">
-                    <input type="hidden" name="sort_by" value="{{ sort_by }}">
-                    <input type="hidden" name="sort_order" value="{{ sort_order }}">
-                    <label class="text-muted small mb-0">类型:</label>
-                    <select name="type_filter" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-                        <option value="应届" {{ 'selected' if type_filter == '应届' else '' }}>应届</option>
-                        <option value="往届" {{ 'selected' if type_filter == '往届' else '' }}>往届</option>
-                        <option value="" {{ 'selected' if not type_filter else '' }}>全部</option>
-                    </select>
-                    <label class="text-muted small mb-0">状态:</label>
-                    <select name="status_filter" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-                        <option value="">全部</option>
-                        <option value="在学" {{ 'selected' if status_filter == '在学' else '' }}>在学</option>
-                        <option value="停学" {{ 'selected' if status_filter == '停学' else '' }}>停学</option>
-                    </select>
-                    <noscript><button type="submit" class="btn btn-sm btn-outline-secondary">筛选</button></noscript>
-                </form>
             </div>
         </div>
 
@@ -401,6 +395,14 @@
     #batch-actions .btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+
+    /* 筛选下拉框 */
+    .filter-select {
+        width: auto !important;
+        min-width: 90px;
+        padding-right: 2rem;
+        font-size: 0.875rem;
     }
 
     /* 表格中的复选框 */
