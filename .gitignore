@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Database
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Keys & secrets
+keys/
+*.pem
+*.key
+*.cert
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.bak2
+*.bak3
+*.orig
+*.backup
+*.fixed
+
+# Claude / AI tools
+.claude/
+
+# Kiro specs (personal dev notes)
+.kiro/

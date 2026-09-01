@@ -1,0 +1,201 @@
+{% extends 'layout.html' %}
+
+{% block title %}学期管理 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">学期标签列表 (共{{ total }}条)</h6>
+        <a href="{{ url_for('add_semester') }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus"></i> 新增标签
+        </a>
+    </div>
+    <div class="card-body">
+        <!-- 搜索栏 -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <form method="get" action="{{ url_for('semesters') }}" class="d-flex">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="search" 
+                               value="{{ search or '' }}" placeholder="搜索标签名称或类型...">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        {% if search %}
+                        <a href="{{ url_for('semesters') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="d-flex justify-content-end align-items-center">
+                    <small class="text-muted me-2">每页显示:</small>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="{{ url_for('semesters', per_page=10, search=search) }}" 
+                           class="btn btn-outline-secondary {{ 'active' if per_page == 10 else '' }}">10</a>
+                        <a href="{{ url_for('semesters', per_page=25, search=search) }}" 
+                           class="btn btn-outline-secondary {{ 'active' if per_page == 25 else '' }}">25</a>
+                        <a href="{{ url_for('semesters', per_page=50, search=search) }}" 
+                           class="btn btn-outline-secondary {{ 'active' if per_page == 50 else '' }}">50</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>标签名称</th>
+                        <th>开始日期</th>
+                        <th>结束日期</th>
+                        <th>标签类型</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if semesters %}
+                        {% for semester in semesters %}
+                        <tr>
+                            <td>{{ semester.id }}</td>
+                            <td>{{ semester.name }}</td>
+                            <td>{{ semester.start_date }}</td>
+                            <td>{{ semester.end_date }}</td>
+                            <td>
+                                {% if semester.tag_type == '上学期' %}
+                                    <span class="badge bg-primary">上学期</span>
+                                {% elif semester.tag_type == '下学期' %}
+                                    <span class="badge bg-success">下学期</span>
+                                {% elif semester.tag_type == '寒假' %}
+                                    <span class="badge bg-info">寒假</span>
+                                {% elif semester.tag_type == '暑假' %}
+                                    <span class="badge bg-warning text-dark">暑假</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ semester.tag_type }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('edit_semester', tag_id=semester.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="修改">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="deleteSemester({{ semester.id }}, this)" 
+                                        class="btn btn-sm btn-outline-danger" 
+                                        title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                {% if search %}
+                                    没有找到匹配的学期标签
+                                {% else %}
+                                    暂无学期标签，点击右侧按钮添加
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        {% if total > per_page %}
+        <nav aria-label="学期标签分页">
+            <ul class="pagination justify-content-center mb-0">
+                <!-- 上一页 -->
+                {% if page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('semesters', page=page-1, per_page=per_page, search=search) }}">上一页</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">上一页</span></li>
+                {% endif %}
+                
+                <!-- 页码 -->
+                {% set start_page = page - 2 %}
+                {% set end_page = page + 2 %}
+                {% set start_page = 1 if start_page < 1 else start_page %}
+                {% set end_page = (total + per_page - 1) // per_page if end_page > (total + per_page - 1) // per_page else end_page %}
+                
+                {% if start_page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('semesters', page=1, per_page=per_page, search=search) }}">1</a>
+                </li>
+                {% if start_page > 2 %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+                {% endif %}
+                
+                {% for p in range(start_page, end_page + 1) %}
+                {% if p != page %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('semesters', page=p, per_page=per_page, search=search) }}">{{ p }}</a>
+                </li>
+                {% else %}
+                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                {% endif %}
+                {% endfor %}
+                
+                {% set max_page = (total + per_page - 1) // per_page %}
+                {% if end_page < max_page %}
+                {% if end_page < max_page - 1 %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('semesters', page=max_page, per_page=per_page, search=search) }}">{{ max_page }}</a>
+                </li>
+                {% endif %}
+                
+                <!-- 下一页 -->
+                {% set max_page = (total + per_page - 1) // per_page %}
+                {% if page < max_page %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('semesters', page=page+1, per_page=per_page, search=search) }}">下一页</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">下一页</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteSemester(tagId, btn) {
+    if (confirm('确定要删除这个学期标签吗？此操作不可恢复。')) {
+        fetch('{{ url_for('delete_semester', tag_id=0) }}'.replace('/0', '/' + tagId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name="csrf_token"]').content || 
+                               document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('删除失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败，请重试');
+        });
+    }
+}
+</script>
+{% endblock %}

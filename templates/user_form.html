@@ -1,0 +1,71 @@
+{% extends 'layout.html' %}
+
+{% block title %}{% if user %}编辑用户{% else %}添加用户{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">{% if user %}编辑用户{% else %}添加用户{% endif %}</h6>
+    </div>
+    <div class="card-body">
+        <form method="post" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="mb-3">
+                <label for="username" class="form-label">用户名</label>
+                <input type="text" class="form-control" id="username" name="username" value="{{ user.username if user else '' }}" {% if user %}readonly{% endif %} required>
+                <div class="invalid-feedback">请输入用户名</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="name" class="form-label">姓名</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ user.name if user else '' }}" autocomplete="name" required>
+                <div class="invalid-feedback">请输入姓名</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label">{% if user %}新密码 (留空则不修改){% else %}密码{% endif %}</label>
+                <input type="password" class="form-control" id="password" name="password" autocomplete="{% if user %}new-password{% else %}current-password{% endif %}" {% if not user %}required{% endif %}>
+                <div class="invalid-feedback">{% if not user %}请输入密码{% endif %}</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="role" class="form-label">角色</label>
+                <select class="form-select" id="role" name="role" autocomplete="off" required>
+                    <option value="" disabled {% if not user %}selected{% endif %}>请选择角色</option>
+                    <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>管理员</option>
+                    <option value="teacher" {% if user and user.role == 'teacher' %}selected{% endif %}>教师</option>
+                    <option value="staff" {% if user and user.role == 'staff' %}selected{% endif %}>职员</option>
+                </select>
+                <div class="invalid-feedback">请选择角色</div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{{ url_for('users') }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 表单验证
+    (function() {
+        'use strict';
+        
+        var forms = document.querySelectorAll('.needs-validation');
+        
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
+{% endblock %}

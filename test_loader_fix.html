@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加载器修复测试</title>
+    <style>
+        .global-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loader-content {
+            text-align: center;
+        }
+        .test-content {
+            padding: 20px;
+            margin: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 模拟全局加载器 -->
+    <div id="globalLoader" class="global-loader" style="display: none;">
+        <div class="loader-content">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <div class="mt-2">加载中，请稍候...</div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <h1>加载器修复测试页面</h1>
+        
+        <div class="test-content">
+            <h3>测试说明</h3>
+            <p>这个页面用于测试页面加载完成后加载器自动隐藏的功能。</p>
+            
+            <button onclick="simulatePageLoad()">模拟页面加载</button>
+            <button onclick="simulateSlowLoad()">模拟慢速加载</button>
+            <button onclick="showLoader()">手动显示加载器</button>
+            <button onclick="hideLoader()">手动隐藏加载器</button>
+            
+            <div style="margin-top: 20px;">
+                <h4>加载器状态: <span id="loaderStatus">隐藏</span></h4>
+                <p>打开浏览器控制台查看详细日志</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟PageOptimizer的核心功能
+        const PageOptimizer = {
+            _isLoaderVisible: false,
+            
+            showLoader: function() {
+                const loader = document.getElementById('globalLoader');
+                if (loader) {
+                    loader.style.display = 'flex';
+                    this._isLoaderVisible = true;
+                    updateLoaderStatus();
+                    console.log('🔄 加载器显示');
+                }
+            },
+            
+            hideLoader: function() {
+                const loader = document.getElementById('globalLoader');
+                if (loader) {
+                    loader.style.display = 'none';
+                    this._isLoaderVisible = false;
+                    updateLoaderStatus();
+                    console.log('✅ 加载器隐藏');
+                }
+            },
+            
+            // 基于页面内容加载状态的检测（修复后的版本）
+            _setupContentLoadDetection: function() {
+                const checkContentLoaded = () => {
+                    const mainContent = document.querySelector('.container.mt-4');
+                    if (mainContent && mainContent.children.length > 0 && this._isLoaderVisible) {
+                        const hasRealContent = Array.from(mainContent.children).some(child => {
+                            return child.textContent && child.textContent.trim().length > 10;
+                        });
+                        
+                        if (hasRealContent) {
+                            console.log('📄 页面内容已加载完成，隐藏加载器');
+                            this.hideLoader();
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                
+                // 使用MutationObserver监听DOM变化
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach(mutation => {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            setTimeout(() => checkContentLoaded(), 50);
+                        }
+                    });
+                });
+                
+                const mainContent = document.querySelector('.container.mt-4');
+                if (mainContent) {
+                    observer.observe(mainContent, { childList: true, subtree: true });
+                }
+                
+                // 初始检查和定期检查
+                setTimeout(checkContentLoaded, 100);
+                const interval = setInterval(() => {
+                    if (checkContentLoaded()) {
+                        clearInterval(interval);
+                        observer.disconnect();
+                    }
+                }, 500);
+                
+                setTimeout(() => {
+                    clearInterval(interval);
+                    observer.disconnect();
+                    if (this._isLoaderVisible) {
+                        console.log('⚠️  内容加载检测超时，强制隐藏加载器');
+                        this.hideLoader();
+                    }
+                }, 8000);
+            }
+        };
+        
+        function updateLoaderStatus() {
+            document.getElementById('loaderStatus').textContent = 
+                PageOptimizer._isLoaderVisible ? '显示' : '隐藏';
+        }
+        
+        function simulatePageLoad() {
+            console.log('=== 模拟页面加载 ===');
+            PageOptimizer.showLoader();
+            
+            // 模拟内容延迟加载
+            setTimeout(() => {
+                const contentDiv = document.createElement('div');
+                contentDiv.innerHTML = '<p>这是模拟加载的页面内容，包含足够的文本长度来触发加载器隐藏机制。</p>';
+                document.querySelector('.container.mt-4').appendChild(contentDiv);
+                
+                // 启动内容加载检测
+                PageOptimizer._setupContentLoadDetection();
+            }, 1000);
+        }
+        
+        function simulateSlowLoad() {
+            console.log('=== 模拟慢速页面加载 ===');
+            PageOptimizer.showLoader();
+            
+            // 启动内容加载检测
+            PageOptimizer._setupContentLoadDetection();
+            
+            // 很慢才加载内容
+            setTimeout(() => {
+                const contentDiv = document.createElement('div');
+                contentDiv.innerHTML = '<p>这是慢速加载的页面内容，测试超时机制是否正常工作。</p>';
+                document.querySelector('.container.mt-4').appendChild(contentDiv);
+            }, 5000); // 5秒后才加载内容
+        }
+        
+        function showLoader() {
+            PageOptimizer.showLoader();
+        }
+        
+        function hideLoader() {
+            PageOptimizer.hideLoader();
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ 测试页面已加载完成');
+            updateLoaderStatus();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+{% extends 'layout.html' %}
+
+{% block title %}课程记录详情 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">课程记录详情</h6>
+        <div>
+            <a href="{{ url_for('edit_record', record_id=record.id) }}" class="btn btn-sm btn-info">
+                <i class="fas fa-edit"></i> 编辑
+            </a>
+            <a href="{{ url_for('records', teacher=current_teacher, search=current_search, page=current_page, per_page=current_per_page, sort_by=current_sort_by, sort_order=current_sort_order) }}" class="btn btn-sm btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2">基本信息</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 120px">科目:</th>
+                        <td>{{ record.subject }}</td>
+                    </tr>
+                    <tr>
+                        <th>教师:</th>
+                        <td>{{ record.teacher }}</td>
+                    </tr>
+                    <tr>
+                        <th>日期:</th>
+                        <td>{{ record.date.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    <tr>
+                        <th>时间:</th>
+                        <td>{{ record.start_time.strftime('%H:%M') }} ({{ record.duration }}分钟)</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2">参与学生</h5>
+                {% if record.students %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>出勤状态</th>
+                                <th>作业情况</th>
+                                <th>学习状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rs in record.students %}
+                            <tr>
+                                <td>{{ rs.student.name }}</td>
+                                <td>{{ rs.attendance }}</td>
+                                <td>{{ rs.homework_status }}</td>
+                                <td>{{ rs.study_status }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">无参与学生</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <h5 class="border-bottom pb-2">课程内容</h5>
+                <div class="p-3 bg-light rounded mb-3">
+                    {% if record.content %}
+                    <p class="mb-0">{{ record.content|nl2br }}</p>
+                    {% else %}
+                    <p class="text-muted mb-0">无课程内容记录</p>
+                    {% endif %}
+                </div>
+                
+                <h5 class="border-bottom pb-2">作业</h5>
+                <div class="p-3 bg-light rounded mb-3">
+                    {% if record.homework %}
+                    <p class="mb-0">{{ record.homework|nl2br }}</p>
+                    {% else %}
+                    <p class="text-muted mb-0">无作业记录</p>
+                    {% endif %}
+                </div>
+                
+                <h5 class="border-bottom pb-2">备注</h5>
+                <div class="p-3 bg-light rounded">
+                    {% if record.notes %}
+                    <p class="mb-0">{{ record.notes|nl2br }}</p>
+                    {% else %}
+                    <p class="text-muted mb-0">无备注</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

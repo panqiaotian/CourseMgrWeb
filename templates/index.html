@@ -1,0 +1,109 @@
+{% extends 'layout.html' %}
+
+{% block title %}首页 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="my-0">欢迎使用课程管理系统</h5>
+            </div>
+            <div class="card-body">
+                <p>您好，{{ current_user.name }}！欢迎使用课程管理系统。</p>
+                <p>本系统提供学生管理、课程安排、课程记录、成绩管理、学费管理等功能，帮助您高效管理教学工作。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="my-0">学生管理</h5>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p>管理学生基本信息，包括姓名、性别、年级等。</p>
+                <a href="{{ url_for('students') }}" class="btn btn-outline-success mt-auto">进入学生管理</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="my-0">课程安排</h5>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p>管理课程安排，设置上课时间、科目、教师和学生。</p>
+                <a href="{{ url_for('schedules') }}" class="btn btn-outline-info mt-auto">进入课程安排</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="my-0">课程记录</h5>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p>记录每次课程的内容、作业和学生出勤情况。</p>
+                <a href="{{ url_for('records') }}" class="btn btn-outline-warning mt-auto">进入课程记录</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-purple text-white" style="background-color: #6f42c1 !important;">
+                <h5 class="my-0">班级管理</h5>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p>管理班级信息，组织学生分组和班级设置。</p>
+                <a href="{{ url_for('classes') }}" class="btn btn-outline-dark mt-auto" style="border-color: #6f42c1; color: #6f42c1;">进入班级管理</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="my-0">成绩管理</h5>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p>管理学生考试成绩，记录分数和排名。</p>
+                <a href="{{ url_for('grades') }}" class="btn btn-outline-danger mt-auto">进入成绩管理</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="my-0">学费管理</h5>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p>管理学生缴费记录，跟踪学费收支情况。</p>
+                <a href="{{ url_for('payments') }}" class="btn btn-outline-primary mt-auto">进入学费管理</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="my-0">课程报名</h5>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p>管理学生课程报名信息，记录课程类型和费用。</p>
+                <a href="{{ url_for('enrollments') }}" class="btn btn-outline-secondary mt-auto">进入课程报名</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

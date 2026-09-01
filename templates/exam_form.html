@@ -1,0 +1,94 @@
+{% extends 'layout.html' %}
+
+{% block title %}{% if exam %}编辑考试记录{% else %}添加考试记录{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">{% if exam %}编辑考试记录{% else %}添加考试记录{% endif %}</h6>
+    </div>
+    <div class="card-body">
+        <form method="post" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="name" class="form-label">考试名称</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ exam.name if exam else '' }}" required>
+                    <div class="invalid-feedback">请输入考试名称</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="subject" class="form-label">科目</label>
+                    <input type="text" class="form-control" id="subject" name="subject" value="{{ exam.subject if exam else '' }}" required>
+                    <div class="invalid-feedback">请输入科目</div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="grade" class="form-label">年级</label>
+                    <input type="text" class="form-control" id="grade" name="grade" value="{{ exam.grade if exam else '' }}" required>
+                    <div class="invalid-feedback">请输入年级</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="teacher" class="form-label">教师</label>
+                    <input type="text" class="form-control" id="teacher" name="teacher" value="{{ exam.teacher if exam else '' }}" required>
+                    <div class="invalid-feedback">请输入教师姓名</div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="exam_date" class="form-label">考试日期</label>
+                    <input type="date" class="form-control" id="exam_date" name="exam_date" value="{{ exam.exam_date.strftime('%Y-%m-%d') if exam else '' }}" required>
+                    <div class="invalid-feedback">请选择考试日期</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="total_score" class="form-label">总分</label>
+                    <input type="number" class="form-control" id="total_score" name="total_score" value="{{ exam.total_score if exam else '100' }}" required>
+                    <div class="invalid-feedback">请输入总分</div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="group_id" class="form-label">班级 (可选)</label>
+                <select class="form-select" id="group_id" name="group_id">
+                    <option value="">不指定班级</option>
+                    {% for group in groups %}
+                    <option value="{{ group.id }}" {% if exam and exam.student_group_id == group.id %}selected{% endif %}>{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{{ url_for('grades') }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 表单验证
+    (function() {
+        'use strict';
+        
+        var forms = document.querySelectorAll('.needs-validation');
+        
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'layout.html' %}
+
+{% block title %}{% if student %}编辑学生{% else %}添加学生{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">{% if student %}编辑学生{% else %}添加学生{% endif %}</h6>
+    </div>
+    <div class="card-body">
+        <form method="post" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="mb-3">
+                <label for="name" class="form-label">姓名</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ student.name if student else '' }}" required>
+                <div class="invalid-feedback">请输入学生姓名</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="gender" class="form-label">性别</label>
+                <select class="form-select" id="gender" name="gender" required>
+                    <option value="" disabled {% if not student %}selected{% endif %}>请选择性别</option>
+                    <option value="男" {% if student and student.gender == '男' %}selected{% endif %}>男</option>
+                    <option value="女" {% if student and student.gender == '女' %}selected{% endif %}>女</option>
+                </select>
+                <div class="invalid-feedback">请选择性别</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="grade" class="form-label">年级</label>
+                <select class="form-select" id="grade" name="grade" required>
+                    <option value="" disabled {% if not student %}selected{% endif %}>请选择年级</option>
+                    <option value="小学一年级" {% if student and student.grade == '小学一年级' %}selected{% endif %}>小学一年级</option>
+                    <option value="小学二年级" {% if student and student.grade == '小学二年级' %}selected{% endif %}>小学二年级</option>
+                    <option value="小学三年级" {% if student and student.grade == '小学三年级' %}selected{% endif %}>小学三年级</option>
+                    <option value="小学四年级" {% if student and student.grade == '小学四年级' %}selected{% endif %}>小学四年级</option>
+                    <option value="小学五年级" {% if student and student.grade == '小学五年级' %}selected{% endif %}>小学五年级</option>
+                    <option value="小学六年级" {% if student and student.grade == '小学六年级' %}selected{% endif %}>小学六年级</option>
+                    <option value="初中一年级" {% if student and student.grade == '初中一年级' %}selected{% endif %}>初中一年级</option>
+                    <option value="初中二年级" {% if student and student.grade == '初中二年级' %}selected{% endif %}>初中二年级</option>
+                    <option value="初中三年级" {% if student and student.grade == '初中三年级' %}selected{% endif %}>初中三年级</option>
+                    <option value="高中一年级" {% if student and student.grade == '高中一年级' %}selected{% endif %}>高中一年级</option>
+                    <option value="高中二年级" {% if student and student.grade == '高中二年级' %}selected{% endif %}>高中二年级</option>
+                    <option value="高中三年级" {% if student and student.grade == '高中三年级' %}selected{% endif %}>高中三年级</option>
+                </select>
+                <div class="invalid-feedback">请选择年级</div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{{ url_for('students') }}" class="btn btn-secondary">返回</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

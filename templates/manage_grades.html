@@ -1,0 +1,251 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ '查看' if view_mode else '管理' }}考试成绩 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">{{ exam.name }} - {{ '查看成绩' if view_mode else '成绩管理' }}</h6>
+        <div class="d-flex gap-2">
+            {% if not view_mode %}
+            <form class="d-inline" method="post" action="{{ url_for('import_grades_csv', exam_id=exam.id) }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="file" name="file" accept=".csv" class="form-control form-control-sm d-inline" style="width:220px">
+                <button type="submit" class="btn btn-sm btn-outline-primary ms-1">导入CSV</button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('export_grades_csv', exam_id=exam.id) }}" class="btn btn-sm btn-outline-success">
+                导出CSV
+            </a>
+            {% if view_mode %}
+            <a href="{{ url_for('manage_grades', exam_id=exam.id) }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-edit"></i> 编辑成绩
+            </a>
+            {% endif %}
+            <a href="{{ url_for('grades') }}" class="btn btn-sm btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="mb-4">
+            <div class="row">
+                <div class="col-md-3"><strong>科目:</strong> {{ exam.subject }}</div>
+                <div class="col-md-3"><strong>年级:</strong> {{ exam.grade }}</div>
+                <div class="col-md-3"><strong>教师:</strong> {{ exam.teacher }}</div>
+                <div class="col-md-3"><strong>考试日期:</strong> {{ exam.exam_date.strftime('%Y-%m-%d') }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-3"><strong>总分:</strong> {{ exam.total_score }}</div>
+                <div class="col-md-9">
+                    {% if exam.student_group_id %}
+                    <strong>班级:</strong> {{ exam.student_group.name if exam.student_group else '无' }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if not view_mode %}
+        <form method="post" id="gradesForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        {% endif %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>学生</th>
+                            <th>分数</th>
+                            <th>排名</th>
+                            <th>年级排名</th>
+                            <th>班级排名</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>
+                                {{ student.name }}
+                                {% if not view_mode %}
+                                <input type="hidden" name="student_id" value="{{ student.id }}">
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not view_mode %}
+                                <input type="number" step="0.01" class="form-control score-input" name="score" value="{{ score_map[student.id].score if student.id in score_map else '' }}" min="0" max="{{ exam.total_score }}" placeholder="0 ~ {{ exam.total_score }}">
+                                {% else %}
+                                <span class="form-control-plaintext">{{ score_map[student.id].score if student.id in score_map else '未录入' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not view_mode %}
+                                <input type="text" class="form-control" name="rank" value="{{ score_map[student.id].rank if student.id in score_map else '' }}">
+                                {% else %}
+                                <span class="form-control-plaintext">{{ score_map[student.id].rank if student.id in score_map else '未录入' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not view_mode %}
+                                <input type="text" class="form-control" name="grade_rank" value="{{ score_map[student.id].grade_rank if student.id in score_map else '' }}" placeholder="手动录入">
+                                {% else %}
+                                <span class="form-control-plaintext">{{ score_map[student.id].grade_rank if student.id in score_map else '未录入' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not view_mode %}
+                                <input type="text" class="form-control" name="class_rank" value="{{ score_map[student.id].class_rank if student.id in score_map else '' }}" placeholder="手动录入">
+                                {% else %}
+                                <span class="form-control-plaintext">{{ score_map[student.id].class_rank if student.id in score_map else '未录入' }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-3 align-items-center">
+                {% if not view_mode %}
+                <div>
+                    <button type="submit" class="btn btn-primary me-2">保存成绩</button>
+                    <a href="{{ url_for('grades') }}" class="btn btn-secondary">取消</a>
+                </div>
+                {% else %}
+                <div></div>
+                {% endif %}
+                <div class="text-end">
+                    <div><strong>人数：</strong><span id="statCount">-</span></div>
+                    <div><strong>平均分：</strong><span id="statAvg">-</span>，<strong>最高：</strong><span id="statMax">-</span>，<strong>最低：</strong><span id="statMin">-</span></div>
+                </div>
+            </div>
+        {% if not view_mode %}
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        {% if not view_mode %}
+        var $scores = $('input.score-input');
+        var total = parseFloat('{{ exam.total_score }}');
+
+        function calcStats() {
+            var arr = [];
+            $scores.each(function(){
+                var v = parseFloat($(this).val());
+                if (!isNaN(v)) arr.push(v);
+            });
+            if (arr.length === 0) {
+                $('#statCount').text('0');
+                $('#statAvg').text('-');
+                $('#statMax').text('-');
+                $('#statMin').text('-');
+                return;
+            }
+            var sum = arr.reduce(function(a, b) { return a + b; }, 0);
+            var avg = (sum / arr.length).toFixed(2);
+            var max = Math.max.apply(null, arr);
+            var min = Math.min.apply(null, arr);
+            $('#statCount').text(arr.length);
+            $('#statAvg').text(avg);
+            $('#statMax').text(max);
+            $('#statMin').text(min);
+        }
+
+        function calculateRanks() {
+            // 读取分数字典 {score: [rowIdx,...]} 以支持并列
+            var rows = [];
+            $scores.each(function(){
+                var v = parseFloat($(this).val());
+                rows.push({
+                    row: $(this).closest('tr'),
+                    score: isNaN(v) ? null : v
+                });
+            });
+            // 排序（降序）并计算并列名次
+            var sorted = rows.slice().filter(function(r) { return r.score !== null; }).sort(function(a, b) { return b.score - a.score; });
+            var lastScore = null, lastRank = 0, pos = 0;
+            sorted.forEach(function(item){
+                pos += 1;
+                if (lastScore === null || item.score !== lastScore) {
+                    lastRank = pos;
+                    lastScore = item.score;
+                }
+                item.row.find('input[name="rank"]').val(lastRank);
+            });
+        }
+
+        function validateRow($input) {
+            var v = $input.val().trim();
+            $input.removeClass('is-invalid');
+            if (v === '') return true; // 允许空（未录入）
+            var num = parseFloat(v);
+            if (isNaN(num)) { $input.addClass('is-invalid'); return false; }
+            if (num < 0 || (!isNaN(total) && num > total)) { $input.addClass('is-invalid'); return false; }
+            return true;
+        }
+
+        // 初始计算
+        calcStats();
+        calculateRanks();
+
+        // 事件绑定
+        $scores.on('input blur', function(){
+            validateRow($(this));
+            calcStats();
+            calculateRanks();
+        });
+
+        // Ctrl+S 快捷保存
+        $(document).on('keydown', function(e){
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+                $('#gradesForm').trigger('submit');
+            }
+        });
+
+        // 离开前未保存提示（简单版：如存在 invalid 则提示）
+        window.addEventListener('beforeunload', function (e) {
+            if ($('input.is-invalid').length > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+        {% else %}
+        // 查看模式下的统计计算
+        function calcStats() {
+            var arr = [];
+            // 只统计分数列的数据（每行的第2个td中的.form-control-plaintext）
+            $('tbody tr').each(function(){
+                var $scoreCell = $(this).find('td:nth-child(2) .form-control-plaintext');
+                var text = $scoreCell.text().trim();
+                if (text !== '未录入' && text !== '') {
+                    var v = parseFloat(text);
+                    if (!isNaN(v)) arr.push(v);
+                }
+            });
+            if (arr.length === 0) {
+                $('#statCount').text('0');
+                $('#statAvg').text('-');
+                $('#statMax').text('-');
+                $('#statMin').text('-');
+                return;
+            }
+            var sum = arr.reduce(function(a, b) { return a + b; }, 0);
+            var avg = (sum / arr.length).toFixed(2);
+            var max = Math.max.apply(null, arr);
+            var min = Math.min.apply(null, arr);
+            $('#statCount').text(arr.length);
+            $('#statAvg').text(avg);
+            $('#statMax').text(max);
+            $('#statMin').text(min);
+        }
+
+        // 初始计算
+        calcStats();
+        {% endif %}
+    });
+</script>
+{% endblock %}

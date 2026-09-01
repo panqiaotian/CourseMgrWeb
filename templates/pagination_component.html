@@ -1,0 +1,66 @@
+<!-- 统一的分页导航组件 -->
+<!-- 使用方法: 在需要的地方引用此组件 -->
+<!-- 需要的变量: total, per_page, page, search, route_name -->
+<!-- 可选变量: teacher, sort_by, sort_order -->
+
+{% if total > per_page %}
+<nav aria-label="{{ aria_label or '列表分页' }}">
+    <ul class="pagination justify-content-center">
+        {% set total_pages = (total + per_page - 1) // per_page %}
+        
+        <!-- 首页 -->
+        {% if page > 1 %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for(route_name, page=1, per_page=per_page, search=search, teacher=teacher if teacher is defined else none, sort_by=sort_by if sort_by is defined else none, sort_order=sort_order if sort_order is defined else none) }}">首页</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for(route_name, page=page-1, per_page=per_page, search=search, teacher=teacher if teacher is defined else none, sort_by=sort_by if sort_by is defined else none, sort_order=sort_order if sort_order is defined else none) }}">上一页</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">首页</span>
+        </li>
+        <li class="page-item disabled">
+            <span class="page-link">上一页</span>
+        </li>
+        {% endif %}
+
+        <!-- 页码 -->
+        {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+            {% if p == page %}
+            <li class="page-item active">
+                <span class="page-link">{{ p }}</span>
+            </li>
+            {% else %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for(route_name, page=p, per_page=per_page, search=search, teacher=teacher if teacher is defined else none, sort_by=sort_by if sort_by is defined else none, sort_order=sort_order if sort_order is defined else none) }}">{{ p }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        <!-- 末页 -->
+        {% if page < total_pages %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for(route_name, page=page+1, per_page=per_page, search=search, teacher=teacher if teacher is defined else none, sort_by=sort_by if sort_by is defined else none, sort_order=sort_order if sort_order is defined else none) }}">下一页</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for(route_name, page=total_pages, per_page=per_page, search=search, teacher=teacher if teacher is defined else none, sort_by=sort_by if sort_by is defined else none, sort_order=sort_order if sort_order is defined else none) }}">末页</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">下一页</span>
+        </li>
+        <li class="page-item disabled">
+            <span class="page-link">末页</span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+
+<!-- 分页信息 -->
+<div class="text-center text-muted">
+    {% set start_item = (page - 1) * per_page + 1 %}
+    {% set end_item = [page * per_page, total]|min %}
+    显示第 {{ start_item }} 至 {{ end_item }} 项，共 {{ total }} 项
+</div>
+{% endif %}

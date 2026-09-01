@@ -1,0 +1,100 @@
+{% extends 'layout.html' %}
+
+{% block title %}{% if enrollment %}编辑课程报名{% else %}添加课程报名{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">{% if enrollment %}编辑课程报名{% else %}添加课程报名{% endif %}</h6>
+    </div>
+    <div class="card-body">
+        <form method="post" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="mb-3">
+                <label for="student_id" class="form-label">学生</label>
+                <select class="form-select" id="student_id" name="student_id" required>
+                    <option value="" disabled {% if not enrollment %}selected{% endif %}>请选择学生</option>
+                    {% for student in students %}
+                    <option value="{{ student.id }}" {% if enrollment and enrollment.student_id == student.id %}selected{% endif %}>{{ student.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">请选择学生</div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="subject" class="form-label">科目</label>
+                    <input type="text" class="form-control" id="subject" name="subject" value="{{ enrollment.subject if enrollment else '' }}" required>
+                    <div class="invalid-feedback">请输入科目</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="course_type" class="form-label">课程类型</label>
+                    <input type="text" class="form-control" id="course_type" name="course_type" value="{{ enrollment.course_type if enrollment else '' }}" required>
+                    <div class="invalid-feedback">请输入课程类型</div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="start_date" class="form-label">开始日期</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ enrollment.start_date.strftime('%Y-%m-%d') if enrollment else '' }}" required>
+                    <div class="invalid-feedback">请选择开始日期</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="end_date" class="form-label">结束日期</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ enrollment.end_date.strftime('%Y-%m-%d') if enrollment else '' }}" required>
+                    <div class="invalid-feedback">请选择结束日期</div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="fee_per_lesson" class="form-label">单课时费用</label>
+                    <input type="number" step="0.01" class="form-control" id="fee_per_lesson" name="fee_per_lesson" value="{{ enrollment.fee_per_lesson if enrollment else '' }}" required>
+                    <div class="invalid-feedback">请输入单课时费用</div>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="total_lessons" class="form-label">总课时</label>
+                    <input type="number" class="form-control" id="total_lessons" name="total_lessons" value="{{ enrollment.total_lessons if enrollment else '' }}" required>
+                    <div class="invalid-feedback">请输入总课时</div>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="remaining_fee" class="form-label">剩余费用</label>
+                    <input type="number" step="0.01" class="form-control" id="remaining_fee" name="remaining_fee" value="{{ enrollment.remaining_fee if enrollment else '0' }}">
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{{ url_for('enrollments') }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 表单验证
+    (function() {
+        'use strict';
+        
+        var forms = document.querySelectorAll('.needs-validation');
+        
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
+{% endblock %}

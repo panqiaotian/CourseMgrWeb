@@ -1,0 +1,202 @@
+{% extends 'layout.html' %}
+
+{% block title %}{% if class_obj %}编辑班级{% else %}添加班级{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">{% if class_obj %}编辑班级{% else %}添加班级{% endif %}</h6>
+    </div>
+    <div class="card-body">
+        <form method="post" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="name" class="form-label">班级名称</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ class_obj.name if class_obj else '' }}" required>
+                    <div class="invalid-feedback">请输入班级名称</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="grade" class="form-label">年级</label>
+                    <select class="form-select" id="grade" name="grade" required>
+                        <option value="" disabled {% if not class_obj %}selected{% endif %}>请选择年级</option>
+                        <option value="小学一年级" {% if class_obj and class_obj.grade == '小学一年级' %}selected{% endif %}>小学一年级</option>
+                        <option value="小学二年级" {% if class_obj and class_obj.grade == '小学二年级' %}selected{% endif %}>小学二年级</option>
+                        <option value="小学三年级" {% if class_obj and class_obj.grade == '小学三年级' %}selected{% endif %}>小学三年级</option>
+                        <option value="小学四年级" {% if class_obj and class_obj.grade == '小学四年级' %}selected{% endif %}>小学四年级</option>
+                        <option value="小学五年级" {% if class_obj and class_obj.grade == '小学五年级' %}selected{% endif %}>小学五年级</option>
+                        <option value="小学六年级" {% if class_obj and class_obj.grade == '小学六年级' %}selected{% endif %}>小学六年级</option>
+                        <option value="初中一年级" {% if class_obj and class_obj.grade == '初中一年级' %}selected{% endif %}>初中一年级</option>
+                        <option value="初中二年级" {% if class_obj and class_obj.grade == '初中二年级' %}selected{% endif %}>初中二年级</option>
+                        <option value="初中三年级" {% if class_obj and class_obj.grade == '初中三年级' %}selected{% endif %}>初中三年级</option>
+                        <option value="高中一年级" {% if class_obj and class_obj.grade == '高中一年级' %}selected{% endif %}>高中一年级</option>
+                        <option value="高中二年级" {% if class_obj and class_obj.grade == '高中二年级' %}selected{% endif %}>高中二年级</option>
+                        <option value="高中三年级" {% if class_obj and class_obj.grade == '高中三年级' %}selected{% endif %}>高中三年级</option>
+                    </select>
+                    <div class="invalid-feedback">请选择年级</div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="teacher" class="form-label">任课老师</label>
+                    <input type="text" class="form-control" id="teacher" name="teacher" value="{{ class_obj.teacher if class_obj else '' }}" required>
+                    <div class="invalid-feedback">请输入任课老师</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="subject" class="form-label">科目</label>
+                    <input type="text" class="form-control" id="subject" name="subject" value="{{ class_obj.subject if class_obj else '' }}" required>
+                    <div class="invalid-feedback">请输入科目</div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">班级学生</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">已选学生</div>
+                            <div class="card-body">
+                                <div id="selected-students" class="list-group">
+                                    {% if class_students %}
+                                        {% for student in class_students %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            {{ student.name }}
+                                            <input type="hidden" name="selected_students[]" value="{{ student.id }}">
+                                            <button type="button" class="btn btn-sm btn-danger remove-student" data-student-id="{{ student.id }}">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">可选学生</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="student-search" class="form-label">按名字查询</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="student-search" placeholder="输入学生姓名搜索">
+                                        <button class="btn btn-outline-secondary" type="button" id="search-button">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="available-students" class="list-group">
+                                    {% for student in students %}
+                                        {% if not class_obj or student not in class_students %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center student-item" data-grade="{{ student.grade }}" data-student-id="{{ student.id }}">
+                                            {{ student.name }} ({{ student.grade }})
+                                            <button type="button" class="btn btn-sm btn-success add-student" data-student-id="{{ student.id }}" data-student-name="{{ student.name }}">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('classes') }}" class="btn btn-secondary">返回</a>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let selectedStudents = [];
+    let availableStudents = [];
+
+    // 初始化学生数据
+    function initStudents() {
+        selectedStudents = [
+            {% for student in class_students %}
+                { id: '{{ student.id }}', name: '{{ student.name }}', grade: '{{ student.grade }}' },
+            {% endfor %}
+        ];
+        availableStudents = [
+            {% for student in students %}
+                {% if not class_obj or student not in class_students %}
+                    { id: '{{ student.id }}', name: '{{ student.name }}', grade: '{{ student.grade }}' },
+                {% endif %}
+            {% endfor %}
+        ];
+        renderLists();
+    }
+
+    // 渲染列表
+    function renderLists() {
+        $('#selected-students').html(selectedStudents.map(student => 
+            `<div class="list-group-item d-flex justify-content-between align-items-center">
+                ${student.name}
+                <input type="hidden" name="selected_students[]" value="${student.id}">
+                <button type="button" class="btn btn-sm btn-danger remove-student" data-student-id="${student.id}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>`
+        ).join(''));
+
+        $('#available-students').html(availableStudents.map(student =>
+            `<div class="list-group-item d-flex justify-content-between align-items-center">
+                ${student.name} (${student.grade})
+                <button type="button" class="btn btn-sm btn-success add-student" data-student-id="${student.id}">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>`
+        ).join(''));
+    }
+
+    // 实时搜索
+    $('#student-search').on('input', function() {
+        const keyword = $(this).val().toLowerCase();
+        const filtered = availableStudents.filter(student =>
+            student.name.toLowerCase().includes(keyword)
+        );
+        $('#available-students').html(filtered.map(student =>
+            `<div class="list-group-item d-flex justify-content-between align-items-center">
+                ${student.name} (${student.grade})
+                <button type="button" class="btn btn-sm btn-success add-student" data-student-id="${student.id}">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>`
+        ).join(''));
+    });
+
+    // 添加学生
+    $(document).on('click', '.add-student', function() {
+        const studentId = $(this).data('student-id');
+        const student = availableStudents.find(s => s.id == studentId);
+        
+        selectedStudents.push(student);
+        availableStudents = availableStudents.filter(s => s.id != studentId);
+        renderLists();
+    });
+
+    // 移除学生
+    $(document).on('click', '.remove-student', function() {
+        const studentId = $(this).data('student-id');
+        const student = selectedStudents.find(s => s.id == studentId);
+        
+        availableStudents.push(student);
+        selectedStudents = selectedStudents.filter(s => s.id != studentId);
+        renderLists();
+    });
+
+    initStudents();
+});
+</script>
+{% endblock %}

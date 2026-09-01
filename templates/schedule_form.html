@@ -1,0 +1,412 @@
+{% extends 'layout.html' %}
+
+{% block title %}{% if schedule %}编辑课程安排{% else %}添加课程安排{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">{% if schedule %}编辑课程安排{% else %}添加课程安排{% endif %}</h6>
+    </div>
+    <div class="card-body">
+        <form method="post" class="needs-validation" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="subject_input" class="form-label">科目</label>
+                    <div class="position-relative">
+                        <input type="text" class="form-control" id="subject_input" name="subject" 
+                               value="{{ schedule.subject if schedule else '' }}" 
+                               placeholder="请选择或输入科目" 
+                               autocomplete="off" required>
+                        <div class="dropdown-menu w-100" id="subject_dropdown" style="max-height: 200px; overflow-y: auto;">
+                            <div class="dropdown-item" data-value="数学">数学</div>
+                            <div class="dropdown-item" data-value="物理">物理</div>
+                            <div class="dropdown-item" data-value="化学">化学</div>
+                            <div class="dropdown-item" data-value="英语">英语</div>
+                            <div class="dropdown-item" data-value="语文">语文</div>
+                        </div>
+                    </div>
+                    <div class="form-text">可以从下拉选项中选择，也可以直接输入其他科目</div>
+                    <div class="invalid-feedback">请选择或输入科目</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="date_type_input" class="form-label">日期类型</label>
+                    <div class="position-relative">
+                        <input type="text" class="form-control" id="date_type_input" name="date_type" 
+                               value="{{ schedule.date_type if schedule else '' }}" 
+                               placeholder="请选择或输入日期类型" 
+                               autocomplete="off" required>
+                        <div class="dropdown-menu w-100" id="date_type_dropdown" style="max-height: 200px; overflow-y: auto;">
+                            <div class="dropdown-item" data-value="周五">周五</div>
+                            <div class="dropdown-item" data-value="周六">周六</div>
+                            <div class="dropdown-item" data-value="周日">周日</div>
+                            <div class="dropdown-item" data-value="每周">每周</div>
+                        </div>
+                    </div>
+                    <div class="form-text">可以从下拉选项中选择，也可以直接输入其他日期类型</div>
+                    <div class="invalid-feedback">请选择或输入日期类型</div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="teacher" class="form-label">教师</label>
+                    <select class="form-select" id="teacher" name="teacher" required>
+                        <option value="" disabled {% if not schedule %}selected{% endif %}>请选择教师</option>
+                        {% for teacher in teachers %}
+                        <option value="{{ teacher.name }}" {% if schedule and schedule.teacher == teacher.name %}selected{% endif %}>{{ teacher.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">请选择教师</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="duration" class="form-label">时长(分钟)</label>
+                    <input type="number" class="form-control" id="duration" name="duration" value="{{ schedule.duration if schedule else '120' }}" required>
+                    <div class="invalid-feedback">请输入课程时长</div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">开始时间</label>
+                    <div class="row">
+                        <div class="col-6">
+                            <select class="form-select" id="start_hour" name="start_hour" required>
+                                <option value="" disabled {% if not schedule %}selected{% endif %}>时</option>
+                                {% for hour in range(8, 22) %}
+                                <option value="{{ hour }}" {% if schedule and schedule.start_time.hour == hour %}selected{% endif %}>{{ hour }}时</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <select class="form-select" id="start_minute" name="start_minute" required>
+                                <option value="" disabled {% if not schedule %}selected{% endif %}>分</option>
+                                {% for minute in [0, 15, 30, 45] %}
+                                <option value="{{ minute }}" {% if schedule and schedule.start_time.minute == minute %}selected{% endif %}>{{ minute }}分</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="invalid-feedback">请选择开始时间</div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">参与学生</label>
+                <div class="mb-2">
+                    <input type="text" class="form-control form-control-sm" id="student_search" placeholder="搜索学生（按姓名或年级）">
+                </div>
+                <div class="border p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                    {% for student in students %}
+                    <div class="form-check student-item" data-name="{{ student.name }}" data-grade="{{ student.grade }}">
+                        <input class="form-check-input" type="checkbox" name="student_ids" value="{{ student.id }}" id="student_{{ student.id }}" {% if selected_student_ids and student.id in selected_student_ids %}checked{% endif %}>
+                        <label class="form-check-label" for="student_{{ student.id }}">
+                            {{ student.name }} ({{ student.grade }})
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{{ url_for('schedules') }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 表单验证
+    (function() {
+        'use strict';
+        
+        var forms = document.querySelectorAll('.needs-validation');
+        
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+
+    // 学生搜索功能
+    document.addEventListener('DOMContentLoaded', function() {
+        var studentSearch = document.getElementById('student_search');
+        if (studentSearch) {
+            var studentItems = document.querySelectorAll('.student-item');
+            studentSearch.addEventListener('input', function() {
+                var searchTerm = this.value.toLowerCase().trim();
+                studentItems.forEach(function(item) {
+                    var studentName = item.getAttribute('data-name').toLowerCase();
+                    var studentGrade = item.getAttribute('data-grade').toLowerCase();
+                    if (searchTerm === '' || studentName.includes(searchTerm) || studentGrade.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+    
+    // 科目输入框支持选择和直接输入
+    document.addEventListener('DOMContentLoaded', function() {
+        const subjectInput = document.getElementById('subject_input');
+        const subjectDropdown = document.getElementById('subject_dropdown');
+        
+        if (subjectInput && subjectDropdown) {
+            // 获取所有科目选项
+            const subjectItems = subjectDropdown.querySelectorAll('.dropdown-item');
+            
+            // 输入框获得焦点时显示下拉框
+            subjectInput.addEventListener('focus', function() {
+                subjectDropdown.style.display = 'block';
+                subjectDropdown.classList.add('show');
+            });
+
+            // 输入框输入时过滤选项
+            subjectInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                let hasVisibleItems = false;
+
+                subjectItems.forEach(item => {
+                    const itemValue = item.getAttribute('data-value') || '';
+                    const itemText = item.textContent.toLowerCase();
+                    
+                    if (searchTerm === '' || 
+                        itemValue.toLowerCase().includes(searchTerm) || 
+                        itemText.includes(searchTerm)) {
+                        item.style.display = 'block';
+                        hasVisibleItems = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                // 如果没有匹配项，显示提示
+                if (!hasVisibleItems && searchTerm !== '') {
+                    // 创建或更新"无匹配结果"提示
+                    let noResultItem = subjectDropdown.querySelector('.no-result-item');
+                    if (!noResultItem) {
+                        noResultItem = document.createElement('div');
+                        noResultItem.className = 'dropdown-item no-result-item text-muted';
+                        noResultItem.innerHTML = '<em>未找到匹配的选项，可直接输入</em>';
+                        subjectDropdown.appendChild(noResultItem);
+                    }
+                    noResultItem.style.display = 'block';
+                } else {
+                    // 隐藏"无匹配结果"提示
+                    const noResultItem = subjectDropdown.querySelector('.no-result-item');
+                    if (noResultItem) {
+                        noResultItem.style.display = 'none';
+                    }
+                }
+
+                // 显示下拉框
+                subjectDropdown.style.display = 'block';
+                subjectDropdown.classList.add('show');
+            });
+
+            // 点击选项时选择科目
+            subjectItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const subjectValue = this.getAttribute('data-value');
+                    
+                    // 更新输入框的值
+                    subjectInput.value = subjectValue;
+                    
+                    // 隐藏下拉框
+                    subjectDropdown.style.display = 'none';
+                    subjectDropdown.classList.remove('show');
+                });
+            });
+
+            // 点击其他地方时隐藏下拉框
+            document.addEventListener('click', function(e) {
+                if (!subjectInput.contains(e.target) && !subjectDropdown.contains(e.target)) {
+                    subjectDropdown.style.display = 'none';
+                    subjectDropdown.classList.remove('show');
+                }
+            });
+
+            // 键盘导航支持
+            let currentFocus = -1;
+            subjectInput.addEventListener('keydown', function(e) {
+                const visibleItems = Array.from(subjectItems).filter(item => 
+                    item.style.display !== 'none'
+                );
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentFocus++;
+                    if (currentFocus >= visibleItems.length) currentFocus = 0;
+                    setActive(visibleItems);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentFocus--;
+                    if (currentFocus < 0) currentFocus = visibleItems.length - 1;
+                    setActive(visibleItems);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (currentFocus > -1 && visibleItems[currentFocus]) {
+                        visibleItems[currentFocus].click();
+                    } else {
+                        // 如果没有选中项，隐藏下拉框
+                        subjectDropdown.style.display = 'none';
+                        subjectDropdown.classList.remove('show');
+                    }
+                } else if (e.key === 'Escape') {
+                    subjectDropdown.style.display = 'none';
+                    subjectDropdown.classList.remove('show');
+                    currentFocus = -1;
+                }
+            });
+
+            function setActive(items) {
+                // 移除所有活动状态
+                items.forEach(item => item.classList.remove('active'));
+                // 设置当前活动项
+                if (currentFocus > -1 && items[currentFocus]) {
+                    items[currentFocus].classList.add('active');
+                }
+            }
+        }
+    });
+    
+    // 日期类型输入框支持选择和直接输入
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateTypeInput = document.getElementById('date_type_input');
+        const dateTypeDropdown = document.getElementById('date_type_dropdown');
+        
+        if (dateTypeInput && dateTypeDropdown) {
+            // 获取所有日期类型选项
+            const dateTypeItems = dateTypeDropdown.querySelectorAll('.dropdown-item');
+            
+            // 输入框获得焦点时显示下拉框
+            dateTypeInput.addEventListener('focus', function() {
+                dateTypeDropdown.style.display = 'block';
+                dateTypeDropdown.classList.add('show');
+            });
+
+            // 输入框输入时过滤选项
+            dateTypeInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                let hasVisibleItems = false;
+
+                dateTypeItems.forEach(item => {
+                    const itemValue = item.getAttribute('data-value') || '';
+                    const itemText = item.textContent.toLowerCase();
+                    
+                    if (searchTerm === '' || 
+                        itemValue.toLowerCase().includes(searchTerm) || 
+                        itemText.includes(searchTerm)) {
+                        item.style.display = 'block';
+                        hasVisibleItems = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                // 如果没有匹配项，显示提示
+                if (!hasVisibleItems && searchTerm !== '') {
+                    // 创建或更新"无匹配结果"提示
+                    let noResultItem = dateTypeDropdown.querySelector('.no-result-item');
+                    if (!noResultItem) {
+                        noResultItem = document.createElement('div');
+                        noResultItem.className = 'dropdown-item no-result-item text-muted';
+                        noResultItem.innerHTML = '<em>未找到匹配的选项，可直接输入</em>';
+                        dateTypeDropdown.appendChild(noResultItem);
+                    }
+                    noResultItem.style.display = 'block';
+                } else {
+                    // 隐藏"无匹配结果"提示
+                    const noResultItem = dateTypeDropdown.querySelector('.no-result-item');
+                    if (noResultItem) {
+                        noResultItem.style.display = 'none';
+                    }
+                }
+
+                // 显示下拉框
+                dateTypeDropdown.style.display = 'block';
+                dateTypeDropdown.classList.add('show');
+            });
+
+            // 点击选项时选择日期类型
+            dateTypeItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const dateTypeValue = this.getAttribute('data-value');
+                    
+                    // 更新输入框的值
+                    dateTypeInput.value = dateTypeValue;
+                    
+                    // 隐藏下拉框
+                    dateTypeDropdown.style.display = 'none';
+                    dateTypeDropdown.classList.remove('show');
+                });
+            });
+
+            // 点击其他地方时隐藏下拉框
+            document.addEventListener('click', function(e) {
+                if (!dateTypeInput.contains(e.target) && !dateTypeDropdown.contains(e.target)) {
+                    dateTypeDropdown.style.display = 'none';
+                    dateTypeDropdown.classList.remove('show');
+                }
+            });
+
+            // 键盘导航支持
+            let currentFocus = -1;
+            dateTypeInput.addEventListener('keydown', function(e) {
+                const visibleItems = Array.from(dateTypeItems).filter(item => 
+                    item.style.display !== 'none'
+                );
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentFocus++;
+                    if (currentFocus >= visibleItems.length) currentFocus = 0;
+                    setActive(visibleItems);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentFocus--;
+                    if (currentFocus < 0) currentFocus = visibleItems.length - 1;
+                    setActive(visibleItems);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (currentFocus > -1 && visibleItems[currentFocus]) {
+                        visibleItems[currentFocus].click();
+                    } else {
+                        // 如果没有选中项，隐藏下拉框
+                        dateTypeDropdown.style.display = 'none';
+                        dateTypeDropdown.classList.remove('show');
+                    }
+                } else if (e.key === 'Escape') {
+                    dateTypeDropdown.style.display = 'none';
+                    dateTypeDropdown.classList.remove('show');
+                    currentFocus = -1;
+                }
+            });
+
+            function setActive(items) {
+                // 移除所有活动状态
+                items.forEach(item => item.classList.remove('active'));
+                // 设置当前活动项
+                if (currentFocus > -1 && items[currentFocus]) {
+                    items[currentFocus].classList.add('active');
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
